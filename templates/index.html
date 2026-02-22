@@ -1,0 +1,149 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<div class="search-section">
+    <h1 class="page-title">مرحباً بك في استراحة الفيديوهات</h1>
+    <p class="page-subtitle">استرخِ، ابحث، وشاهد ما تحب</p>
+    
+    <form action="{{ url_for('index') }}" method="GET" class="search-form">
+        <div class="search-input-group">
+            <input type="text" name="q" placeholder="ابحث باسم الفيديو أو الكلمات المفتاحية..." value="{{ query }}" class="search-input">
+            <button type="submit" class="search-btn"><i class="fas fa-search"></i></button>
+        </div>
+    </form>
+</div>
+
+<div class="videos-grid">
+    {% for video in videos.items %}
+    <div class="video-card">
+        <div class="video-thumbnail-container">
+           <video class="video-thumbnail" muted onmouseover="this.play()" onmouseout="this.pause();this.currentTime=0;">
+                <source src="{{ url_for('uploaded_file', filename=video.filename) }}" type="video/{{ video.filename.split('.')[-1] }}">
+           </video>
+           <div class="play-overlay">
+               <a href="{{ url_for('watch_video', video_id=video.id) }}"><i class="fas fa-play"></i></a>
+           </div>
+        </div>
+        <div class="video-info">
+            <h3 class="video-title" title="{{ video.title }}">{{ video.title }}</h3>
+            <div class="video-tags">
+                {% if video.tags %}
+                    {% for tag in video.tags.split(',') %}
+                        <span class="tag">{{ tag.strip() }}</span>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            <div class="video-meta">
+                <div class="meta-stats">
+                    <span class="date" title="تاريخ الرفع"><i class="far fa-clock"></i> {{ video.upload_date.strftime('%Y-%m-%d') }}</span>
+                </div>
+                <div class="card-actions">
+                    <a href="{{ url_for('watch_video', video_id=video.id) }}" class="btn-icon" title="مشاهدة" style="width: auto; padding: 8px 15px; border-radius: 20px;"><i class="fas fa-eye"></i> {{ video.views }}</a>
+                    <a href="{{ url_for('download_video', video_id=video.id) }}" class="btn-icon" title="تحميل" style="width: auto; padding: 8px 15px; border-radius: 20px;"><i class="fas fa-download"></i> {{ video.downloads }}</a>
+                    
+                    {% if is_admin %}
+                    <button type="button" class="btn-icon" title="حفظ في قائمة" style="color: var(--primary-color); border: none; background: transparent; cursor: pointer; padding: 0.5rem;" onclick="openPlaylistModal('{{ video.id }}')">
+                        <i class="fas fa-bookmark"></i>
+                    </button>
+                    
+                    <a href="{{ url_for('edit_video', video_id=video.id) }}" class="btn-icon" title="تعديل"><i class="fas fa-edit"></i></a>
+                    <form action="{{ url_for('delete_video', video_id=video.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('تأكيد حذف الفيديو؟');">
+                        <button type="submit" class="btn-icon" title="حذف" style="color: var(--error-color); border: none; background: transparent; cursor: pointer; padding: 0.5rem;"><i class="fas fa-trash"></i></button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="no-videos">
+        <i class="fas fa-video-slash"></i>
+        <h3>لا توجد فيديوهات {% if query %}تطابق بحثك{% else %}مرفوعة بعد{% endif %}</h3>
+        {% if is_admin %}
+        <p>ابدأ برفع أول فيديو الآن!</p>
+        <a href="{{ url_for('upload_video') }}" class="btn-primary" style="margin-top: 20px; display: inline-block;">رفع فيديو</a>
+        {% else %}
+        <p>لم يقم المشرف برفع أي فيديوهات بعد.</p>
+        {% endif %}
+    </div>
+    {% endfor %}
+    </div>
+
+    <!-- Pagination Controls -->
+    {% if videos.pages > 1 %}
+    <div class="pagination-container" style="display: flex; justify-content: center; margin-top: 40px; margin-bottom: 20px; gap: 10px;">
+        {% if videos.has_prev %}
+        <a href="{{ url_for('index', page=videos.prev_num, q=query) }}" class="btn-secondary" style="padding: 10px 20px; text-decoration: none;"><i class="fas fa-arrow-right"></i> السابق</a>
+        {% else %}
+        <span class="btn-secondary" style="padding: 10px 20px; opacity: 0.5; cursor: not-allowed;"><i class="fas fa-arrow-right"></i> السابق</span>
+        {% endif %}
+
+        <div class="page-numbers" style="display: flex; gap: 5px; align-items: center;">
+            {% for page_num in videos.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                {% if page_num %}
+                    {% if videos.page == page_num %}
+                    <span class="btn-primary" style="padding: 10px 15px; border-radius: 8px; font-weight: bold;">{{ page_num }}</span>
+                    {% else %}
+                    <a href="{{ url_for('index', page=page_num, q=query) }}" class="btn-secondary" style="padding: 10px 15px; border-radius: 8px; text-decoration: none;">{{ page_num }}</a>
+                    {% endif %}
+                {% else %}
+                    <span style="color: var(--text-muted); padding: 0 5px;">...</span>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        {% if videos.has_next %}
+        <a href="{{ url_for('index', page=videos.next_num, q=query) }}" class="btn-secondary" style="padding: 10px 20px; text-decoration: none;">التالي <i class="fas fa-arrow-left"></i></a>
+        {% else %}
+        <span class="btn-secondary" style="padding: 10px 20px; opacity: 0.5; cursor: not-allowed;">التالي <i class="fas fa-arrow-left"></i></span>
+        {% endif %}
+    </div>
+    {% endif %}
+
+<!-- Playlist Selection Modal -->
+<div id="playlistModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center;">
+    <div class="modal-content" style="background: var(--dark-bg); padding: 30px; border-radius: 15px; border: 1px solid var(--glass-border); width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <h3 style="margin-bottom: 20px;"><i class="fas fa-list-ul"></i> حفظ الفيديو في قائمة</h3>
+        <form action="{{ url_for('add_to_playlist') }}" method="POST">
+            <input type="hidden" name="video_id" id="modal_video_id" value="">
+            <div class="form-group">
+                <label for="playlist_id">اختر القائمة:</label>
+                <select name="playlist_id" id="playlist_id" class="form-control" required style="background: var(--card-bg);">
+                    <option value="" disabled selected>-- اختر قائمة --</option>
+                    {% for playlist in playlists %}
+                    <option value="{{ playlist.id }}">{{ playlist.name }}</option>
+                    {% endfor %}
+                </select>
+                {% if not playlists %}
+                <p style="color: var(--error-color); font-size: 0.85rem; margin-top: 10px;">لا تملك أي قوائم حالياً. <a href="{{ url_for('manage_playlists') }}" style="color: var(--primary-color); text-decoration: underline;">أنشئ قائمة جديدة</a></p>
+                {% endif %}
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 25px;">
+                <button type="submit" class="btn-primary" style="flex: 1;"><i class="fas fa-save"></i> حفظ</button>
+                <button type="button" class="btn-secondary" style="flex: 1;" onclick="closePlaylistModal()">إلغاء</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openPlaylistModal(videoId) {
+    document.getElementById('modal_video_id').value = videoId;
+    let modal = document.getElementById('playlistModal');
+    modal.style.display = 'flex';
+}
+
+function closePlaylistModal() {
+    document.getElementById('playlistModal').style.display = 'none';
+}
+
+// إغلاق النافذة عند النقر خارجها
+window.onclick = function(event) {
+    let modal = document.getElementById('playlistModal');
+    if (event.target == modal) {
+        modal.style.display = "none";
+    }
+}
+</script>
+
+{% endblock %}

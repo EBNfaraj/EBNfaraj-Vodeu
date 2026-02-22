@@ -1,0 +1,115 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<div class="search-section">
+    <h1 class="page-title">قوائم التشغيل</h1>
+    <p class="page-subtitle">نظم فيديوهاتك في مجلدات لتسهيل الوصول إليها</p>
+</div>
+
+{% if is_admin %}
+<div style="text-align: center; margin-bottom: 40px;">
+    <button type="button" class="btn-primary btn-lg" onclick="openCreatePlaylistModal()" style="font-size: 1.2rem; padding: 15px 30px; box-shadow: 0 5px 15px rgba(0, 210, 255, 0.3);">
+        <i class="fas fa-plus-circle"></i> إنشاء قائمة جديدة
+    </button>
+</div>
+{% endif %}
+
+<!-- Modal لإنشاء قائمة جديدة -->
+<div id="createPlaylistModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center;">
+    <div class="modal-content" style="background: var(--dark-bg); padding: 30px; border-radius: 15px; border: 1px solid var(--glass-border); width: 90%; max-width: 500px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <h3 style="margin-bottom: 20px; text-align: center;"><i class="fas fa-plus-circle"></i> إنشاء قائمة جديدة</h3>
+        <form action="{{ url_for('manage_playlists') }}" method="POST">
+            <div class="form-group">
+                <label for="name">اسم القائمة</label>
+                <input type="text" class="form-control" id="name" name="name" required placeholder="مثال: المفضلة، تعليمي، للاسترخاء..." style="background: var(--card-bg);">
+            </div>
+            <div class="form-group">
+                <label for="description">وصف القائمة (اختياري)</label>
+                <textarea class="form-control" id="description" name="description" rows="2" placeholder="وصف قصير لمحتوى هذه القائمة..." style="background: var(--card-bg);"></textarea>
+            </div>
+            <div class="form-group" style="margin-top: 15px;">
+                <label for="page_id">تعيين هذه القائمة لقسم مخصص (اختياري)</label>
+                <select name="page_id" id="page_id" class="form-control" style="background: var(--card-bg);">
+                    <option value="">-- كقائمة عادية (لا تظهر في الأقسام) --</option>
+                    {% for p in pages %}
+                    <option value="{{ p.id }}">{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+                <small style="color: var(--text-muted); display: block; margin-top: 5px;">إذا اخترت قسماً، ستظهر هذه القائمة في صفحة القسم بالـ Navbar السطحي.</small>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 25px;">
+                <button type="submit" class="btn-primary" style="flex: 2;"><i class="fas fa-save"></i> إنشاء القائمة</button>
+                <button type="button" class="btn-secondary" style="flex: 1;" onclick="closeCreatePlaylistModal()">إلغاء</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openCreatePlaylistModal() {
+    let modal = document.getElementById('createPlaylistModal');
+    modal.style.display = 'flex';
+}
+
+function closeCreatePlaylistModal() {
+    document.getElementById('createPlaylistModal').style.display = 'none';
+}
+
+// دمج إغلاق النافذة عند النقر خارجها للمودال الجديد
+window.addEventListener('click', function(event) {
+    let modal = document.getElementById('createPlaylistModal');
+    if (event.target == modal) {
+        modal.style.display = "none";
+    }
+});
+</script>
+
+<h2 style="margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">
+    <i class="fas fa-folder-open"></i> قوائمك المحفوظة
+</h2>
+
+<div class="videos-grid">
+    {% for playlist in playlists %}
+    <div class="video-card" style="padding: 20px; text-align: center; display: flex; flex-direction: column; justify-content: center; min-height: 200px;">
+        <div style="position: relative;">
+            {% if playlist.page_id %}
+            <span style="position: absolute; top: 0; right: 0; background: var(--primary-color); color: white; padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: bold;"><i class="fas fa-sitemap"></i> قسم: {{ playlist.custom_page.name }}</span>
+            {% endif %}
+            <i class="fas fa-list-alt" style="font-size: 3rem; color: var(--primary-color); margin-bottom: 15px;"></i>
+        </div>
+        <h3 style="font-size: 1.5rem; margin-bottom: 10px;">{{ playlist.name }}</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px;">
+            {{ playlist.description or 'لا يوجد وصف' }}
+        </p>
+        <div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--glass-border); padding-top: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.9rem;"><i class="fas fa-video"></i> {{ playlist.videos|length }} فيديو</span>
+                <a href="{{ url_for('view_playlist', playlist_id=playlist.id) }}" class="btn-primary" style="padding: 5px 15px; border-radius: 20px;">
+                    <i class="fas fa-folder-open"></i> فتح
+                </a>
+            </div>
+            
+            {% if is_admin %}
+            <div style="display: flex; justify-content: flex-end; gap: 5px; margin-top: 5px;">
+                <a href="{{ url_for('edit_playlist', playlist_id=playlist.id) }}" class="btn-icon" title="تعديل القائمة" style="color: var(--primary-color); border: none; background: transparent; padding: 5px;"><i class="fas fa-edit"></i></a>
+                <form action="{{ url_for('delete_playlist', playlist_id=playlist.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('هل أنت متأكد من حذف هذه القائمة نهائياً؟');">
+                    <button type="submit" class="btn-icon" title="حذف القائمة" style="color: var(--error-color); border: none; background: transparent; padding: 5px; cursor: pointer;"><i class="fas fa-trash"></i></button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div class="no-videos">
+        <i class="fas fa-box-open"></i>
+        <h3>لا توجد قوائم تشغيل بعد</h3>
+        {% if is_admin %}
+        <p>قم بإنشاء قائمتك الأولى من النموذج أعلاه!</p>
+        {% else %}
+        <p>لم يقم المشرف بإنشاء أي قوائم بعد.</p>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

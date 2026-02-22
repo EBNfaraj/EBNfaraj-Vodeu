@@ -1,0 +1,103 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<div class="search-section" style="margin-bottom: 30px; position: relative;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px;">
+        <div>
+            <h1 class="page-title" style="margin-bottom: 5px;">
+                <i class="fas fa-list-ul"></i> قائمة: {{ playlist.name }}
+                {% if playlist.page_id %}
+                <span style="background: var(--primary-color); color: white; padding: 3px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; vertical-align: middle; margin-right: 10px;"><i class="fas fa-sitemap"></i> قسم: {{ playlist.custom_page.name }}</span>
+                {% endif %}
+            </h1>
+            {% if playlist.description %}
+            <p class="page-subtitle" style="text-align: right; margin-bottom: 15px;">{{ playlist.description }}</p>
+            {% endif %}
+            <div style="margin-top: 10px;">
+                <span class="tag" style="font-size: 0.9rem;"><i class="far fa-calendar"></i> تاريخ الإنشاء: {{ playlist.created_at.strftime('%Y-%m-%d') }}</span>
+                <span class="tag" style="font-size: 0.9rem; margin-right: 10px;"><i class="fas fa-video"></i> الفيديوهات: {{ playlist.videos|length }}</span>
+            </div>
+        </div>
+        
+        {% if is_admin %}
+        <div class="playlist-actions" style="display: flex; gap: 10px;">
+            <a href="{{ url_for('edit_playlist', playlist_id=playlist.id) }}" class="btn-secondary" style="padding: 8px 15px;"><i class="fas fa-edit"></i> تعديل القائمة</a>
+            <form action="{{ url_for('delete_playlist', playlist_id=playlist.id) }}" method="POST" onsubmit="return confirm('هل أنت متأكد من حذف هذه القائمة نهائياً؟ (لن يتم حذف الفيديوهات الأصلية)');">
+                <button type="submit" class="btn-danger" style="background-color: var(--error-color); color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;"><i class="fas fa-trash"></i> حذف القائمة</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="videos-grid">
+    {% for video in videos.items %}
+    <div class="video-card">
+        <div class="video-thumbnail-container">
+           <video class="video-thumbnail" muted onmouseover="this.play()" onmouseout="this.pause();this.currentTime=0;">
+                <source src="{{ url_for('uploaded_file', filename=video.filename) }}" type="video/{{ video.filename.split('.')[-1] }}">
+           </video>
+           <div class="play-overlay">
+               <a href="{{ url_for('watch_video', video_id=video.id) }}"><i class="fas fa-play"></i></a>
+           </div>
+        </div>
+        <div class="video-info">
+            <h3 class="video-title" title="{{ video.title }}">{{ video.title }}</h3>
+            <div class="video-meta">
+                <div class="meta-stats">
+                    <span class="date" title="تاريخ الرفع"><i class="far fa-clock"></i> {{ video.upload_date.strftime('%Y-%m-%d') }}</span>
+                </div>
+                <!-- أزرار الإجراءات داخل القائمة -->
+                <div class="card-actions">
+                    <a href="{{ url_for('watch_video', video_id=video.id) }}" class="btn-icon" title="مشاهدة" style="width: auto; padding: 8px 15px; border-radius: 20px;"><i class="fas fa-eye"></i> {{ video.views }}</a>
+                    {% if is_admin %}
+                    <form action="{{ url_for('remove_from_playlist', playlist_id=playlist.id, video_id=video.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('إزالة الفيديو من هذه القائمة؟ (لن يتم حذف الفيديو الأصلي)');">
+                        <button type="submit" class="btn-icon" title="إزالة من القائمة" style="color: var(--error-color); border: none; background: transparent; cursor: pointer; padding: 0.5rem;"><i class="fas fa-times-circle" style="font-size: 1.2rem;"></i></button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="no-videos">
+        <i class="fas fa-folder-open"></i>
+        <h3>هذه القائمة فارغة!</h3>
+        <p>اذهب للرئيسية لإضافة فيديوهات إلى هذه القائمة.</p>
+        <a href="{{ url_for('index') }}" class="btn-primary" style="margin-top: 20px; display: inline-block;">الذهاب للرئيسية</a>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination Controls -->
+{% if videos.pages > 1 %}
+<div class="pagination-container" style="display: flex; justify-content: center; margin-top: 40px; margin-bottom: 20px; gap: 10px;">
+    {% if videos.has_prev %}
+    <a href="{{ url_for('view_playlist', playlist_id=playlist.id, page=videos.prev_num) }}" class="btn-secondary" style="padding: 10px 20px; text-decoration: none;"><i class="fas fa-arrow-right"></i> السابق</a>
+    {% else %}
+    <span class="btn-secondary" style="padding: 10px 20px; opacity: 0.5; cursor: not-allowed;"><i class="fas fa-arrow-right"></i> السابق</span>
+    {% endif %}
+
+    <div class="page-numbers" style="display: flex; gap: 5px; align-items: center;">
+        {% for page_num in videos.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if page_num %}
+                {% if videos.page == page_num %}
+                <span class="btn-primary" style="padding: 10px 15px; border-radius: 8px; font-weight: bold;">{{ page_num }}</span>
+                {% else %}
+                <a href="{{ url_for('view_playlist', playlist_id=playlist.id, page=page_num) }}" class="btn-secondary" style="padding: 10px 15px; border-radius: 8px; text-decoration: none;">{{ page_num }}</a>
+                {% endif %}
+            {% else %}
+                <span style="color: var(--text-muted); padding: 0 5px;">...</span>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    {% if videos.has_next %}
+    <a href="{{ url_for('view_playlist', playlist_id=playlist.id, page=videos.next_num) }}" class="btn-secondary" style="padding: 10px 20px; text-decoration: none;">التالي <i class="fas fa-arrow-left"></i></a>
+    {% else %}
+    <span class="btn-secondary" style="padding: 10px 20px; opacity: 0.5; cursor: not-allowed;">التالي <i class="fas fa-arrow-left"></i></span>
+    {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<div class="search-section">
+    <h1 class="page-title">إدارة الصفحات</h1>
+    <p class="page-subtitle">قم بإنشاء وتخصيص أقسام جديدة تظهر في شريط التنقل العلوي</p>
+</div>
+
+<div style="text-align: center; margin-bottom: 40px;">
+    <button type="button" class="btn-primary btn-lg" onclick="openCreatePageModal()" style="font-size: 1.2rem; padding: 15px 30px; box-shadow: 0 5px 15px rgba(0, 210, 255, 0.3);">
+        <i class="fas fa-plus-circle"></i> إنشاء صفحة جديدة
+    </button>
+</div>
+
+<!-- Modal لإنشاء صفحة جديدة -->
+<div id="createPageModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center;">
+    <div class="modal-content" style="background: var(--dark-bg); padding: 30px; border-radius: 15px; border: 1px solid var(--glass-border); width: 90%; max-width: 500px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <h3 style="margin-bottom: 20px; text-align: center;"><i class="fas fa-file-alt"></i> إنشاء صفحة قسم جديد</h3>
+        <form action="{{ url_for('manage_pages') }}" method="POST">
+            <div class="form-group">
+                <label for="name">اسم الصفحة (سيظهر في القائمة العلوية)</label>
+                <input type="text" class="form-control" id="name" name="name" required placeholder="مثال: وثائقيات، محاضرات، دروس..." style="background: var(--card-bg);">
+            </div>
+            <div class="form-group">
+                <label for="description">وصف الصفحة (اختياري)</label>
+                <textarea class="form-control" id="description" name="description" rows="2" placeholder="وصف قصير لمحتوى هذا القسم..." style="background: var(--card-bg);"></textarea>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 25px;">
+                <button type="submit" class="btn-primary" style="flex: 2;"><i class="fas fa-save"></i> إنشاء الصفحة</button>
+                <button type="button" class="btn-secondary" style="flex: 1;" onclick="closeCreatePageModal()">إلغاء</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openCreatePageModal() {
+    let modal = document.getElementById('createPageModal');
+    modal.style.display = 'flex';
+}
+
+function closeCreatePageModal() {
+    document.getElementById('createPageModal').style.display = 'none';
+}
+
+window.addEventListener('click', function(event) {
+    let modal = document.getElementById('createPageModal');
+    if (event.target == modal) {
+        modal.style.display = "none";
+    }
+});
+</script>
+
+<h2 style="margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">
+    <i class="fas fa-sitemap"></i> الأقسام الحالية
+</h2>
+
+<div class="videos-grid">
+    {% for page in pages %}
+    <div class="video-card" style="padding: 20px; text-align: center; display: flex; flex-direction: column; justify-content: center; min-height: 200px;">
+        <i class="fas fa-file-alt" style="font-size: 3rem; color: var(--primary-color); margin-bottom: 15px;"></i>
+        <h3 style="font-size: 1.5rem; margin-bottom: 10px;">{{ page.name }}</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px;">
+            {{ page.description or 'لا يوجد وصف' }}
+        </p>
+        <div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--glass-border); padding-top: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.9rem;"><i class="fas fa-link"></i> /p/{{ page.slug }}</span>
+                <a href="{{ url_for('view_page', slug=page.slug) }}" class="btn-primary" style="padding: 5px 15px; border-radius: 20px;">
+                    <i class="fas fa-eye"></i> عرض
+                </a>
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end; gap: 5px; margin-top: 5px;">
+                <form action="{{ url_for('delete_page', page_id=page.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('هل أنت متأكد من حذف هذه الصفحة نهائياً؟ القوائم المرتبطة بها لن تُحذف، سيتم فك ارتباطها فقط.');">
+                    <button type="submit" class="btn-icon" title="حذف الصفحة" style="color: var(--error-color); border: none; background: transparent; padding: 5px; cursor: pointer;"><i class="fas fa-trash"></i> حذف</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="no-videos">
+        <i class="fas fa-network-wired"></i>
+        <h3>لا توجد أي صفحات مخصصة بعد</h3>
+        <p>قم بإنشاء صفحتك الأولى من الزر أعلاه لتظهر في شريط التنقل!</p>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

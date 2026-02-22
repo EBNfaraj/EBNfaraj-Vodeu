@@ -1,0 +1,139 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<div class="search-section" style="margin-bottom: 40px; padding: 40px; background: linear-gradient(135deg, rgba(0,210,255,0.1), rgba(58,123,213,0.1)); border-radius: 20px; text-align: center;">
+    <h1 class="page-title" style="font-size: 2.5rem; margin-bottom: 15px;"><i class="fas fa-folder-open"></i> {{ page_title }}</h1>
+    <p class="page-subtitle" style="font-size: 1.1rem; max-width: 600px; margin: 0 auto; color: var(--text-muted);">
+        مكتبة مرئية تحتوي على الفيديوهات المتعلقة بقسم "{{ page_title }}" مقسمة مرتبة في قوائم تشغيل.
+    </p>
+</div>
+
+<!-- عرض القوائم كحاويات رئيسية بداخلها الفيديوهات -->
+{% for playlist in playlists.items %}
+    {% if playlist.videos|length > 0 %}
+    <div class="lecture-category" style="margin-bottom: 60px;">
+        <div class="category-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary-color); padding-bottom: 15px; margin-bottom: 25px;">
+            <h2 style="font-size: 1.8rem; color: var(--text-color);"><i class="fas fa-folder-open" style="color: var(--primary-color);"></i> {{ playlist.name }}</h2>
+            <a href="{{ url_for('view_playlist', playlist_id=playlist.id) }}" class="btn-secondary" style="font-size: 0.9rem;">
+                عرض الكل ({{ playlist.videos|length }}) <i class="fas fa-chevron-left"></i>
+            </a>
+        </div>
+        
+        <div class="videos-grid" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
+            <!-- نعرض أول 4 فيديوهات فقط لكل قائمة كمعاينة -->
+            {% for video in playlist.videos[:4] %}
+            <div class="video-card">
+                <div class="video-thumbnail-container">
+                   <video class="video-thumbnail" muted onmouseover="this.play()" onmouseout="this.pause();this.currentTime=0;">
+                        <source src="{{ url_for('uploaded_file', filename=video.filename) }}" type="video/{{ video.filename.split('.')[-1] }}">
+                   </video>
+                   <div class="play-overlay">
+                       <a href="{{ url_for('watch_video', video_id=video.id) }}"><i class="fas fa-play"></i></a>
+                   </div>
+                </div>
+                <div class="video-info">
+                    <h3 class="video-title" title="{{ video.title }}">{{ video.title }}</h3>
+                    <div class="video-meta">
+                        <div class="meta-stats">
+                            <span class="date" title="تاريخ الرفع"><i class="far fa-clock"></i> {{ video.upload_date.strftime('%Y-%m-%d') }}</span>
+                        </div>
+                        <div class="card-actions">
+                            <a href="{{ url_for('watch_video', video_id=video.id) }}" class="btn-icon" title="مشاهدة" style="width: auto; padding: 8px 15px; border-radius: 20px;"><i class="fas fa-eye"></i> {{ video.views }}</a>
+                            <a href="{{ url_for('download_video', video_id=video.id) }}" class="btn-icon" title="تحميل" style="width: auto; padding: 8px 15px; border-radius: 20px;"><i class="fas fa-download"></i> {{ video.downloads }}</a>
+                            
+                            {% if is_admin %}
+                            <button type="button" class="btn-icon" title="حفظ في قائمة" style="color: var(--primary-color); border: none; background: transparent; cursor: pointer; padding: 0.5rem;" onclick="openPlaylistModal('{{ video.id }}')">
+                                <i class="fas fa-bookmark"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+{% else %}
+    <div class="no-videos" style="text-align: center; padding: 50px;">
+        <i class="fas fa-folder-minus" style="font-size: 4rem; color: var(--text-muted); margin-bottom: 20px;"></i>
+        <h3>هذا القسم فارغ حالياً</h3>
+        <p>لم يتم إضافة أي قوائم تشغيل لهذا القسم بعد.</p>
+    </div>
+{% endfor %}
+
+<!-- Pagination Controls -->
+{% if playlists.pages > 1 %}
+<div class="pagination-container" style="display: flex; justify-content: center; margin-top: 50px; margin-bottom: 20px; gap: 10px;">
+    {% if playlists.has_prev %}
+    <a href="{{ url_for('view_page', slug=page_slug, page=playlists.prev_num) }}" class="btn-secondary" style="padding: 10px 20px; text-decoration: none;"><i class="fas fa-arrow-right"></i> السابق</a>
+    {% else %}
+    <span class="btn-secondary" style="padding: 10px 20px; opacity: 0.5; cursor: not-allowed;"><i class="fas fa-arrow-right"></i> السابق</span>
+    {% endif %}
+
+    <div class="page-numbers" style="display: flex; gap: 5px; align-items: center;">
+        {% for page_num in playlists.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if page_num %}
+                {% if playlists.page == page_num %}
+                <span class="btn-primary" style="padding: 10px 15px; border-radius: 8px; font-weight: bold;">{{ page_num }}</span>
+                {% else %}
+                <a href="{{ url_for('view_page', slug=page_slug, page=page_num) }}" class="btn-secondary" style="padding: 10px 15px; border-radius: 8px; text-decoration: none;">{{ page_num }}</a>
+                {% endif %}
+            {% else %}
+                <span style="color: var(--text-muted); padding: 0 5px;">...</span>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    {% if playlists.has_next %}
+    <a href="{{ url_for('view_page', slug=page_slug, page=playlists.next_num) }}" class="btn-secondary" style="padding: 10px 20px; text-decoration: none;">التالي <i class="fas fa-arrow-left"></i></a>
+    {% else %}
+    <span class="btn-secondary" style="padding: 10px 20px; opacity: 0.5; cursor: not-allowed;">التالي <i class="fas fa-arrow-left"></i></span>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- نربط مودال القوائم حتى يعمل زر الحفظ الموجود بالبطاقات -->
+<div id="playlistModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center;">
+    <div class="modal-content" style="background: var(--dark-bg); padding: 30px; border-radius: 15px; border: 1px solid var(--glass-border); width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <h3 style="margin-bottom: 20px;"><i class="fas fa-list-ul"></i> حفظ الفيديو في قائمة</h3>
+        <form action="{{ url_for('add_to_playlist') }}" method="POST">
+            <input type="hidden" name="video_id" id="modal_video_id" value="">
+            <div class="form-group">
+                <label for="playlist_id">اختر القائمة:</label>
+                <select name="playlist_id" id="playlist_id" class="form-control" required style="background: var(--card-bg);">
+                    <option value="" disabled selected>-- اختر قائمة --</option>
+                    {% for p in playlists %}
+                    <option value="{{ p.id }}">{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+                {% if not playlists %}
+                <p style="color: var(--error-color); font-size: 0.85rem; margin-top: 10px;">لا تملك أي قوائم حالياً. <a href="{{ url_for('manage_playlists') }}" style="color: var(--primary-color); text-decoration: underline;">أنشئ قائمة جديدة</a></p>
+                {% endif %}
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 25px;">
+                <button type="submit" class="btn-primary" style="flex: 1;"><i class="fas fa-save"></i> حفظ</button>
+                <button type="button" class="btn-secondary" style="flex: 1;" onclick="closePlaylistModal()">إلغاء</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openPlaylistModal(videoId) {
+    document.getElementById('modal_video_id').value = videoId;
+    let modal = document.getElementById('playlistModal');
+    modal.style.display = 'flex';
+}
+function closePlaylistModal() {
+    document.getElementById('playlistModal').style.display = 'none';
+}
+window.onclick = function(event) {
+    let modal = document.getElementById('playlistModal');
+    if (event.target == modal) {
+        modal.style.display = "none";
+    }
+}
+</script>
+
+{% endblock %}

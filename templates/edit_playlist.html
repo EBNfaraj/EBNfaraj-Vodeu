@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<div class="search-section">
+    <h1 class="page-title"><i class="fas fa-edit"></i> تعديل القائمة</h1>
+    <p class="page-subtitle">تعديل اسم ووصف وخصائص ظهور قائمة "{{ playlist.name }}"</p>
+</div>
+
+<div class="upload-container" style="margin-bottom: 50px;">
+    <div class="upload-card">
+        <form action="{{ url_for('edit_playlist', playlist_id=playlist.id) }}" method="POST">
+            <div class="form-group">
+                <label for="name">اسم القائمة</label>
+                <input type="text" class="form-control" id="name" name="name" value="{{ playlist.name }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="description">وصف القائمة (اختياري)</label>
+                <textarea class="form-control" id="description" name="description" rows="3">{{ playlist.description }}</textarea>
+            </div>
+            
+            <div class="form-group" style="margin-top: 15px;">
+                <label for="page_id">تعيين هذه القائمة لقسم مخصص (اختياري)</label>
+                <select name="page_id" id="page_id" class="form-control">
+                    <option value="">-- كقائمة عادية (لا تظهر في الأقسام) --</option>
+                    {% for p in pages %}
+                    <option value="{{ p.id }}" {% if playlist.page_id == p.id %}selected{% endif %}>{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+                <small style="color: var(--text-muted); display: block; margin-top: 5px;">إذا اخترت قسماً، ستظهر هذه القائمة في صفحة القسم بالـ Navbar السطحي.</small>
+            </div>
+            
+            <div style="display: flex; gap: 15px; margin-top: 30px;">
+                <button type="submit" class="btn-primary" style="flex: 2;"><i class="fas fa-save"></i> حفظ التعديلات</button>
+                <a href="{{ url_for('view_playlist', playlist_id=playlist.id) }}" class="btn-secondary" style="flex: 1; text-align: center;"><i class="fas fa-times"></i> إلغاء</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

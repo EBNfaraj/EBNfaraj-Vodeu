@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<div class="upload-container" style="max-width: 500px; margin: 50px auto;">
+    <div class="upload-header text-center">
+        <h2><i class="fas fa-user-shield"></i> تسجيل الدخول لوحة الإدارة</h2>
+        <p>قم بتسجيل الدخول للوصول إلى صلاحيات الرفع والتعديل والإدارة.</p>
+    </div>
+    
+    <div class="upload-card">
+        <form action="{{ url_for('login') }}" method="POST" class="upload-form">
+            
+            <div class="form-group">
+                <label for="username"><i class="fas fa-user"></i> اسم المستخدم</label>
+                <input type="text" id="username" name="username" class="form-control" required autofocus placeholder="Admin">
+            </div>
+            
+            <div class="form-group">
+                <label for="password"><i class="fas fa-lock"></i> كلمة المرور</label>
+                <input type="password" id="password" name="password" class="form-control" required placeholder="••••••••">
+            </div>
+            
+            <div class="form-actions mt-4">
+                <button type="submit" class="btn-primary btn-block btn-lg"><i class="fas fa-sign-in-alt"></i> تسجيل الدخول</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

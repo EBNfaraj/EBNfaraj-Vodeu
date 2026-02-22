@@ -1,0 +1,130 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<div class="upload-container">
+    <div class="upload-header">
+        <h2><i class="fas fa-cloud-upload-alt"></i> رفع فيديو جديد</h2>
+        <p>شارك فيديوهاتك المفضلة وأضف لها عنواناً وكلمات مفتاحية ليسهل البحث عنها.</p>
+    </div>
+    
+    <div class="upload-card">
+        <form action="{{ url_for('upload_video') }}" method="POST" enctype="multipart/form-data" class="upload-form">
+            
+            <div class="form-group file-upload-group">
+                <div id="drop-zone" class="file-label file-drop-zone">
+                    <i class="fas fa-file-video upload-icon"></i>
+                    <span class="file-text">اسحب وأفلت الفيديو هنا أو اضغط للاختيار</span>
+                    <span class="file-hint">(الصيغ المدعومة: MP4, WEBM)</span>
+                    <input type="file" id="video_file" name="video_file" accept=".mp4,.webm" required class="file-input" onchange="updateFileName(this)">
+                </div>
+                <div id="file-name-display" class="file-name-display"></div>
+            </div>
+            
+            <div class="form-group">
+                <label for="title"><i class="fas fa-heading"></i> عنوان الفيديو (اختياري)</label>
+                <input type="text" id="title" name="title" placeholder="إذا تركته فارغاً سيتم استخدام اسم الملف الأصلي" class="form-control">
+            </div>
+            
+            <div class="form-group">
+                <label for="description"><i class="fas fa-align-left"></i> وصف الفيديو (اختياري)</label>
+                <textarea id="description" name="description" placeholder="اكتب وصفاً مختصراً للفيديو..." class="form-control" rows="3"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="tags"><i class="fas fa-tags"></i> كلمات مفتاحية (Tags)</label>
+                <input type="text" id="tags" name="tags" placeholder="مثال: استرخاء, طبيعة, دراسة, موسيقى (افصل بينها بفاصلة ,)" class="form-control">
+                <small class="form-text text-muted">الكلمات المفتاحية تساعد الآخرين في العثور على الفيديو بسهولة.</small>
+            </div>
+            
+            <div class="form-group" style="margin-top: 20px;">
+                <label for="playlist_id"><i class="fas fa-list-ul"></i> إضافة إلى قائمة تشغيل (اختياري)</label>
+                <select name="playlist_id" id="playlist_id" class="form-control" style="background: var(--card-bg);">
+                    <option value="" selected>-- لا تضف إلى قائمة (مكتبة عامة) --</option>
+                    {% for playlist in playlists %}
+                    <option value="{{ playlist.id }}">{{ playlist.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn-primary btn-block btn-lg"><i class="fas fa-upload"></i> رفع الآن</button>
+                <a href="{{ url_for('index') }}" class="btn-secondary btn-block mt-2" style="text-align: center;">إلغاء</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('video_file');
+const display = document.getElementById('file-name-display');
+const labelText = document.querySelector('.file-text');
+
+// Prevent default drag behaviors
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, preventDefaults, false);
+    document.body.addEventListener(eventName, preventDefaults, false);
+});
+
+function preventDefaults (e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+// Highlight drop zone when item is dragged over it
+['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, highlight, false);
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, unhighlight, false);
+});
+
+function highlight(e) {
+    dropZone.classList.add('dragover');
+}
+
+function unhighlight(e) {
+    dropZone.classList.remove('dragover');
+}
+
+// Handle dropped files
+dropZone.addEventListener('drop', handleDrop, false);
+
+function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    handleFiles(files);
+}
+
+dropZone.addEventListener('click', () => fileInput.click());
+
+function updateFileName(input) {
+    if (input.files && input.files.length > 0) {
+        handleFiles(input.files);
+    }
+}
+
+function handleFiles(files) {
+    if (files.length > 0) {
+        const file = files[0];
+        // Check if file is video
+        if (file.type.startsWith('video/') || file.name.endsWith('.mp4') || file.name.endsWith('.webm')) {
+            // Assign file to input
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            fileInput.files = dataTransfer.files;
+            
+            display.textContent = 'الملف المحدد: ' + file.name;
+            display.style.display = 'block';
+            labelText.textContent = 'تغيير الملف';
+        } else {
+            alert('الرجاء اختيار ملف فيديو بصيغة (MP4, WEBM) فقط.');
+            fileInput.value = '';
+            display.style.display = 'none';
+        }
+    }
+}
+</script>
+
+{% endblock %}

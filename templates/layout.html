@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>استراحة الفيديوهات</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="{{ url_for('index') }}" class="logo">
+                <i class="fas fa-play-circle"></i> استراحة الفيديوهات
+            </a>
+            <div class="nav-links">
+                <a href="{{ url_for('index') }}" class="nav-link"><i class="fas fa-home"></i> الرئيسية</a>
+                {% for page in custom_pages %}
+                <a href="{{ url_for('view_page', slug=page.slug) }}" class="nav-link"><i class="fas fa-folder"></i> {{ page.name }}</a>
+                {% endfor %}
+                {% if is_admin %}
+                <a href="{{ url_for('manage_users') }}" class="nav-link"><i class="fas fa-users-cog"></i> المستخدمين</a>
+                <a href="{{ url_for('manage_playlists') }}" class="nav-link"><i class="fas fa-list-ul"></i> إدارة القوائم</a>
+                <a href="{{ url_for('manage_pages') }}" class="nav-link"><i class="fas fa-sitemap"></i> إدارة الأقسام</a>
+                <a href="{{ url_for('upload_video') }}" class="nav-link btn-primary"><i class="fas fa-upload"></i> رفع فيديو</a>
+                <a href="{{ url_for('logout') }}" class="nav-link" style="color: #ff6b6b;" title="تسجيل الخروج"><i class="fas fa-sign-out-alt"></i></a>
+                {% else %}
+                <a href="{{ url_for('login') }}" class="nav-link" title="دخول الإدارة"><i class="fas fa-user-shield"></i></a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <div class="container main-content">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for message in messages %}
+                        <div class="alert alert-success">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Script for video thumbnails (if needed) and interactions -->
+    <script>
+        // Auto-hide flash messages
+        setTimeout(function() {
+            let messages = document.querySelector('.flash-messages');
+            if (messages) {
+                messages.style.opacity = '0';
+                setTimeout(() => messages.remove(), 500);
+            }
+        }, 3000);
+    </script>
+</body>
+</html>
